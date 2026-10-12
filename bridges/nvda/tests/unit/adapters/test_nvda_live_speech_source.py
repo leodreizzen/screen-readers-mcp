@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import weakref
 from collections.abc import Iterator
 from typing import Any
 
@@ -153,3 +154,17 @@ def test_marks_arriving_after_stop_do_nothing(clock: FakeClock) -> None:
 	start.run()
 	end.run()
 	assert live.fate(1) == (protocol.SpeechFate.PENDING, False)
+
+
+def test_a_captured_callback_does_not_outlive_its_speech(clock: FakeClock) -> None:
+	"""A say all line carries its reader in a callback; holding it keeps NVDA's say all running."""
+
+	class Reader:
+		def line_reached(self) -> None: ...
+
+	reader = Reader()
+	alive = weakref.ref(reader)
+	live = Live(clock)
+	live.speak([nvda_stubs.StubCallbackCommand(reader.line_reached, name="say-all:lineReached"), "a line"])
+	del reader
+	assert alive() is None

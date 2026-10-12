@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import weakref
+
 import pytest
 from fakes.clock import FakeClock
 from fakes.continuous_read import FakeContinuousRead
@@ -270,3 +272,17 @@ def test_out_of_range_indices_answer_unknown_and_are_ignored(speech: SpeechBuffe
 	assert speech.fate_at(99) is protocol.SpeechFate.UNKNOWN
 	assert speech.started_at(-1) is False
 	assert speech.fate_at(0) is protocol.SpeechFate.UNKNOWN
+
+
+def test_a_captured_sequence_keeps_none_of_its_commands_alive(speech: SpeechBuffer) -> None:
+	"""NVDA counts say all as running for as long as anything holds the reader its callbacks belong to."""
+
+	class Owner:
+		def callback(self) -> None: ...
+
+	owner = Owner()
+	alive = weakref.ref(owner)
+	speech.append([owner.callback, "words"])
+	del owner
+	assert alive() is None
+	assert speech.get_last() == ("words", 1)

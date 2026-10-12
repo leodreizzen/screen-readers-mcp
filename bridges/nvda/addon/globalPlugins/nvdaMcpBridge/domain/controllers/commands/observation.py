@@ -17,7 +17,10 @@ if TYPE_CHECKING:
 def speech_entries(
 	entries: list[tuple[str, int, int, float]], buffer: SpeechBuffer
 ) -> list[protocol.SpeechEntry]:
-	"""``buffer`` is the one ``entries`` came from: the fate is read now, so a later read may find it resolved."""
+	"""``buffer`` is the one ``entries`` came from.
+
+	The fate is read now, so a later read may find it resolved.
+	"""
 	return [
 		protocol.SpeechEntry(
 			text=text,

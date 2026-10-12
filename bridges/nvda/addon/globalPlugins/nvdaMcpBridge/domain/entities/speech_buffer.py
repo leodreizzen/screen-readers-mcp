@@ -48,10 +48,10 @@ class SpeechBuffer(IndexedBuffer):
 		self._started: list[bool] = [False]
 
 	def _sentinel(self) -> Any:
-		return [""]
+		return ""
 
 	def _render(self, entry: Any) -> str:
-		return join_speech(entry)
+		return entry if isinstance(entry, str) else ""
 
 	def set_observer(self, observer: Callable[[str], None] | None) -> None:
 		"""The observer is called outside the lock."""
@@ -67,14 +67,17 @@ class SpeechBuffer(IndexedBuffer):
 
 		``fate`` is ``PENDING`` when the source will report the outcome through the mark_* methods,
 		and ``UNKNOWN`` when it cannot.
+
+		Only the text is kept: a sequence's commands can hold NVDA objects alive, and a say all reader
+		held this way makes NVDA cancel speech on every focus change.
 		"""
+		text = join_speech(sequence)
 		with self._lock:
-			self._record(sequence, log_position)
+			self._record(text, log_position)
 			self._fates.append(fate)
 			self._started.append(False)
 			index = len(self._entries) - 1
 			self._speaking = True
-			text = join_speech(sequence)
 		if self._observer is not None and text:
 			self._observer(text)
 		return index
