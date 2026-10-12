@@ -49,6 +49,10 @@ func announcement(text string) (string, error) {
 	return text, nil
 }
 
+func boolPtr(v bool) *bool {
+	return &v
+}
+
 // capturedEntries never returns nil, so an agent finds an empty list rather than JSON null.
 func capturedEntries(entries []ports.SpeechEntry) []capturedEntry {
 	mapped := make([]capturedEntry, 0, len(entries))
@@ -58,6 +62,9 @@ func capturedEntries(entries []ports.SpeechEntry) []capturedEntry {
 			Index:       entry.Index,
 			LogPosition: entry.LogPosition,
 			EmittedAt:   entry.EmittedAt,
+			Fate:        entry.Fate,
+			// Copied, so each entry points at its own value rather than the loop variable's.
+			StartedSpeaking: boolPtr(entry.StartedSpeaking),
 		})
 	}
 	return mapped

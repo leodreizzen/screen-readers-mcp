@@ -35,7 +35,7 @@ class TypeTextHandler(CommandHandler):
 		return protocol.TypeResult(
 			# Never the text: typing is how a secret is entered.
 			typed=len(params.text),
-			speech=speech_entries(entries),
+			speech=speech_entries(entries, buffer),
 			speechFrom=from_index,
 			speechTo=to_index,
 			state=state_snapshot(ctx),

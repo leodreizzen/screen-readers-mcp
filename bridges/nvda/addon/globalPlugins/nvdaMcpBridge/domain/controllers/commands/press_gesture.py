@@ -46,7 +46,7 @@ class PressGestureHandler(CommandHandler):
 		entries, from_index, to_index = buffer.entries_since(start_index)
 		return protocol.GestureResult(
 			pressed=presses,
-			speech=speech_entries(entries),
+			speech=speech_entries(entries, buffer),
 			speechFrom=from_index,
 			speechTo=to_index,
 			# Mode-state only: focus moves asynchronously, so a sample now could report the page just left.

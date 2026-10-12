@@ -75,7 +75,8 @@ func TestSpeechSinceMapsTheWireResultIntoDomainVocabulary(t *testing.T) {
 	}
 
 	want := ports.SpeechRange{
-		Entries:   []ports.SpeechEntry{{Text: "button", Index: 8, LogPosition: 41}},
+		// No fate on the wire is what an older bridge sends, and it means exactly "unknown".
+		Entries:   []ports.SpeechEntry{{Text: "button", Index: 8, LogPosition: 41, Fate: "unknown"}},
 		FromIndex: 7,
 		ToIndex:   9,
 	}
@@ -399,5 +400,28 @@ func TestCloseIsIdempotent(t *testing.T) {
 	}
 	if err := client.Close(); err != nil {
 		t.Errorf("second Close: %v", err)
+	}
+}
+
+func TestSpeechSinceCarriesWhatBecameOfEachUtterance(t *testing.T) {
+	cancelled := wire.SpeechFateCancelled
+	started := true
+	client, _ := newClient(t, func(request wire.Request) (any, error) {
+		return wire.SpeechResult{
+			Entries: []wire.SpeechEntry{
+				{Text: "a long label", Index: 3, LogPosition: 0, Fate: &cancelled, StartedSpeaking: &started},
+			},
+			FromIndex: 3,
+			ToIndex:   4,
+		}, nil
+	})
+
+	got, err := client.SpeechSince(3)
+	if err != nil {
+		t.Fatalf("SpeechSince: %v", err)
+	}
+	entry := got.Entries[0]
+	if entry.Fate != "cancelled" || !entry.StartedSpeaking {
+		t.Errorf("fate = %q, startedSpeaking = %v; want cancelled, true", entry.Fate, entry.StartedSpeaking)
 	}
 }

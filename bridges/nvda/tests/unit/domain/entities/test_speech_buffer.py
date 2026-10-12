@@ -6,6 +6,7 @@ from __future__ import annotations
 import pytest
 from fakes.clock import FakeClock
 from fakes.continuous_read import FakeContinuousRead
+from nvdaMcpBridge import protocol
 from nvdaMcpBridge.domain.entities.indexed_buffer import POLL_INTERVAL
 from nvdaMcpBridge.domain.entities.speech_buffer import (
 	CONTINUOUS_READ_STALE_SECONDS,
@@ -213,3 +214,59 @@ def test_observer_can_be_unregistered(speech: SpeechBuffer) -> None:
 	speech.set_observer(None)
 	speech.append(["after"])
 	assert seen == ["during"]
+
+
+# -- fate: what became of an utterance after it was queued ---------------------------------------
+
+
+def test_append_returns_the_index_the_entry_landed_at(speech: SpeechBuffer) -> None:
+	assert speech.append(["one"]) == 1
+	assert speech.append(["two"]) == 2
+
+
+def test_an_entry_appended_without_a_fate_is_unknown(speech: SpeechBuffer) -> None:
+	"""A source that cannot observe the outcome must not claim one."""
+	index = speech.append(["words"])
+	assert speech.fate_at(index) is protocol.SpeechFate.UNKNOWN
+	assert speech.started_at(index) is False
+
+
+def test_a_pending_entry_resolves_to_completed(speech: SpeechBuffer) -> None:
+	index = speech.append(["words"], fate=protocol.SpeechFate.PENDING)
+	speech.mark_started(index)
+	speech.mark_completed(index)
+	assert speech.fate_at(index) is protocol.SpeechFate.COMPLETED
+	assert speech.started_at(index) is True
+
+
+def test_a_pending_entry_resolves_to_cancelled_and_keeps_whether_it_started(speech: SpeechBuffer) -> None:
+	never_sounded = speech.append(["first"], fate=protocol.SpeechFate.PENDING)
+	cut_midway = speech.append(["second"], fate=protocol.SpeechFate.PENDING)
+	speech.mark_started(cut_midway)
+	speech.mark_cancelled(never_sounded)
+	speech.mark_cancelled(cut_midway)
+	assert speech.fate_at(never_sounded) is protocol.SpeechFate.CANCELLED
+	assert speech.started_at(never_sounded) is False
+	assert speech.fate_at(cut_midway) is protocol.SpeechFate.CANCELLED
+	assert speech.started_at(cut_midway) is True
+
+
+def test_a_resolved_fate_is_not_rewritten(speech: SpeechBuffer) -> None:
+	index = speech.append(["words"], fate=protocol.SpeechFate.PENDING)
+	speech.mark_completed(index)
+	speech.mark_cancelled(index)
+	assert speech.fate_at(index) is protocol.SpeechFate.COMPLETED
+
+
+def test_marks_cannot_turn_unknown_into_a_claim(speech: SpeechBuffer) -> None:
+	index = speech.append(["words"])
+	speech.mark_completed(index)
+	assert speech.fate_at(index) is protocol.SpeechFate.UNKNOWN
+
+
+def test_out_of_range_indices_answer_unknown_and_are_ignored(speech: SpeechBuffer) -> None:
+	speech.mark_cancelled(99)
+	speech.mark_started(-1)
+	assert speech.fate_at(99) is protocol.SpeechFate.UNKNOWN
+	assert speech.started_at(-1) is False
+	assert speech.fate_at(0) is protocol.SpeechFate.UNKNOWN

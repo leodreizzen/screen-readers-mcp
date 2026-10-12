@@ -17,6 +17,14 @@ type SpeechEntry struct {
 	// utterance, which in live mode can be seconds before it is heard; empty
 	// when the reader did not supply one.
 	EmittedAt string
+	// Fate is what became of the utterance after it was queued: "completed",
+	// "cancelled", "pending" or "unknown". Capture happens at queue time, so
+	// Text is present either way; only Fate says whether it was spoken.
+	// "unknown" when the reader cannot observe it or did not supply one.
+	Fate string
+	// StartedSpeaking is whether the synthesizer reached the start. With a
+	// cancelled Fate, false means none of it sounded.
+	StartedSpeaking bool
 }
 
 // SpeechRange Entries omits utterances that rendered empty, so len(Entries) is

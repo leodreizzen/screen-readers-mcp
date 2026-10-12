@@ -56,7 +56,9 @@ func (t *GetBraille) OutputSchema() json.RawMessage {
 					"text": {"type": "string", "description": "What was sent to the display. Often abbreviated differently from what was spoken, which is the point of checking both."},
 					"index": {"type": "integer", "description": "This update's place in the BRAILLE ring, which is not interchangeable with a speech index."},
 					"logPosition": {"type": "integer", "description": "Where this update sits on the reader's log journal. This is the only braille fetch, so it is the sole route to a braille coordinate."},
-					"emittedAt": {"type": "string", "description": "Always absent here: braille updates carry no emission time. The field exists because speech and braille share one entry shape."}
+					"emittedAt": {"type": "string", "description": "Always absent here: braille updates carry no emission time. The field exists because speech and braille share one entry shape."},
+					"fate": {"type": "string", "enum": ["completed", "cancelled", "pending", "unknown"], "description": "Always absent here: braille has no synthesizer. The field exists because speech and braille share one entry shape."},
+					"startedSpeaking": {"type": "boolean", "description": "Always absent here, for the same reason."}
 				},
 				"required": ["text", "index", "logPosition"]
 			}

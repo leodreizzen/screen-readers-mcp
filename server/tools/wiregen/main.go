@@ -120,6 +120,7 @@ var enumNames = map[string]string{
 	"debug|debugwarning|error|info|io|warning":                                         "LogLevel",
 	"braille|config|document|focus|gestures|guidance|interact|log|speech|state|typing": "Capability",
 	"maxChars|maxLines|none":                                                           "TruncatedBy",
+	"cancelled|completed|pending|unknown":                                              "SpeechFate",
 }
 
 var initialisms = map[string]string{

@@ -67,7 +67,9 @@ func (t *GetSpeech) OutputSchema() json.RawMessage {
 					"text": {"type": "string", "description": "What the reader spoke."},
 					"index": {"type": "integer", "description": "This utterance's own place in the speech ring."},
 					"logPosition": {"type": "integer", "description": "Where this utterance sits on the reader's log journal. Hand it to get_log as sincePosition to see what the reader was doing around it."},
-					"emittedAt": {"type": "string", "description": "When the reader EMITTED this, as \"YYYY-MM-DD HH:MM:SS.mmm\" -- the same shape the reader's own log uses. Two of these subtract to answer \"how long after\". Emitted is not heard: in live mode an utterance queued behind a longer one can be seconds from audible. Absent if the reader supplied none."}
+					"emittedAt": {"type": "string", "description": "When the reader EMITTED this, as \"YYYY-MM-DD HH:MM:SS.mmm\" -- the same shape the reader's own log uses. Two of these subtract to answer \"how long after\". Emitted is not heard: in live mode an utterance queued behind a longer one can be seconds from audible. Absent if the reader supplied none."},
+					"fate": {"type": "string", "enum": ["completed", "cancelled", "pending", "unknown"], "description": "What became of this utterance after the reader QUEUED it. Capture happens at queue time, so text is present whether or not anyone heard it: a keystroke cancels whatever is still pending, and that text was captured all the same. \"completed\": the synthesizer reached its end. \"cancelled\": speech was cancelled first -- some, all or NONE of it sounded; see startedSpeaking. \"pending\": still sounding or still waiting, so read again later. \"unknown\": this session cannot observe it -- a silent session synthesises nothing -- or the reader did not say. NEVER infer it from the gap between two emittedAt values: a later utterance can be queued while this one is still sounding, without cutting it."},
+					"startedSpeaking": {"type": "boolean", "description": "Whether the synthesizer reached the START of this utterance. With fate \"cancelled\", false means none of it was heard and true means it was cut partway -- how far is not known."}
 				},
 				"required": ["text", "index", "logPosition"]
 			}
@@ -89,6 +91,10 @@ type capturedEntry struct {
 	LogPosition int    `json:"logPosition"`
 	// EmittedAt uses the reader's own log format, "YYYY-MM-DD HH:MM:SS.mmm", and is empty if the reader supplied none.
 	EmittedAt string `json:"emittedAt,omitempty"`
+	// Fate is set for every spoken entry, "unknown" included, and absent for braille, which has no synthesizer.
+	Fate string `json:"fate,omitempty"`
+	// StartedSpeaking is a pointer so false survives for speech and braille can leave it absent.
+	StartedSpeaking *bool `json:"startedSpeaking,omitempty"`
 }
 
 type speechRangeResult struct {
@@ -119,6 +125,9 @@ func (t *GetSpeech) Execute(ctx ToolContext, params json.RawMessage) (any, error
 			Index:       entry.Index,
 			LogPosition: entry.LogPosition,
 			EmittedAt:   entry.EmittedAt,
+			Fate:        entry.Fate,
+			// Copied, so each entry points at its own value rather than the loop variable's.
+			StartedSpeaking: boolPtr(entry.StartedSpeaking),
 		})
 	}
 	return speechRangeResult{

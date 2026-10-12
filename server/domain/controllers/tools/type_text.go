@@ -86,7 +86,9 @@ func (t *TypeText) OutputSchema() json.RawMessage {
 					"text": {"type": "string", "description": "What the reader spoke."},
 					"index": {"type": "integer", "description": "This utterance's place in the speech ring."},
 					"logPosition": {"type": "integer", "description": "Where it sits on the reader's log journal; hand it to get_log as sincePosition."},
-					"emittedAt": {"type": "string", "description": "When the reader emitted it. Absent if the reader supplied none."}
+					"emittedAt": {"type": "string", "description": "When the reader emitted it. Absent if the reader supplied none."},
+					"fate": {"type": "string", "enum": ["completed", "cancelled", "pending", "unknown"], "description": "What became of it after it was queued: completed, cancelled, pending or unknown. The text is captured either way, so only this says whether it was spoken; see get_speech."},
+					"startedSpeaking": {"type": "boolean", "description": "Whether the synthesizer reached its start; with fate cancelled, false means none of it sounded. See get_speech."}
 				},
 				"required": ["text", "index", "logPosition"]
 			}

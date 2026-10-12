@@ -94,6 +94,9 @@ func speechEntries(entries []wire.SpeechEntry) []ports.SpeechEntry {
 			LogPosition: e.LogPosition,
 			// Optional on the wire, so an older bridge's field reads empty.
 			EmittedAt: derefString(e.EmittedAt),
+			// An older bridge sends no fate, which is exactly "unknown".
+			Fate:            speechFate(e.Fate),
+			StartedSpeaking: e.StartedSpeaking != nil && *e.StartedSpeaking,
 		})
 	}
 	return mapped
@@ -153,6 +156,13 @@ func derefInt(v *int) int {
 		return 0
 	}
 	return *v
+}
+
+func speechFate(v *wire.SpeechFate) string {
+	if v == nil {
+		return string(wire.SpeechFateUnknown)
+	}
+	return string(*v)
 }
 
 func derefString(v *string) string {

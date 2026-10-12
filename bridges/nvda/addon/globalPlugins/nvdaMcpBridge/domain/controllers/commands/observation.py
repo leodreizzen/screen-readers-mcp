@@ -10,16 +10,22 @@ from .... import protocol
 from .wallclock import format_wallclock
 
 if TYPE_CHECKING:
+	from ...entities.speech_buffer import SpeechBuffer
 	from .session_context import SessionContext
 
 
-def speech_entries(entries: list[tuple[str, int, int, float]]) -> list[protocol.SpeechEntry]:
+def speech_entries(
+	entries: list[tuple[str, int, int, float]], buffer: SpeechBuffer
+) -> list[protocol.SpeechEntry]:
+	"""``buffer`` is the one ``entries`` came from: the fate is read now, so a later read may find it resolved."""
 	return [
 		protocol.SpeechEntry(
 			text=text,
 			index=index,
 			logPosition=log_position,
 			emittedAt=format_wallclock(emitted_at),
+			fate=buffer.fate_at(index),
+			startedSpeaking=buffer.started_at(index),
 		)
 		for text, index, log_position, emitted_at in entries
 	]

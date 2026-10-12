@@ -130,6 +130,7 @@ sayAll = types.ModuleType("speech.sayAll")
 sayAll.SayAllHandler = None  # type: ignore[attr-defined]
 filter_speechSequence = StubExtensionPoint()
 pre_speechQueued = StubExtensionPoint()
+speechCanceled = StubExtensionPoint()
 pre_writeCells = StubExtensionPoint()
 
 
@@ -153,6 +154,7 @@ def install() -> None:
 		extensions = types.ModuleType("speech.extensions")
 		extensions.filter_speechSequence = filter_speechSequence  # type: ignore[attr-defined]
 		extensions.pre_speechQueued = pre_speechQueued  # type: ignore[attr-defined]
+		extensions.speechCanceled = speechCanceled  # type: ignore[attr-defined]
 		speech = sys.modules.get("speech") or types.ModuleType("speech")
 		speech.extensions = extensions  # type: ignore[attr-defined]
 		sys.modules["speech"] = speech
@@ -193,5 +195,5 @@ def reset() -> None:
 	log.messages.clear()
 	eventQueue.queued.clear()
 	sayAll.SayAllHandler = None  # type: ignore[attr-defined]
-	for point in (filter_speechSequence, pre_speechQueued, pre_writeCells):
+	for point in (filter_speechSequence, pre_speechQueued, speechCanceled, pre_writeCells):
 		point.handlers.clear()

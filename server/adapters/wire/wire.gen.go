@@ -127,6 +127,17 @@ const (
 	LogLevelError        LogLevel = "error"
 )
 
+// SpeechFate is a closed value set in the wire contract.
+type SpeechFate string
+
+// The values SpeechFate may take.
+const (
+	SpeechFateCompleted SpeechFate = "completed"
+	SpeechFateCancelled SpeechFate = "cancelled"
+	SpeechFatePending   SpeechFate = "pending"
+	SpeechFateUnknown   SpeechFate = "unknown"
+)
+
 // TruncatedBy is a closed value set in the wire contract.
 type TruncatedBy string
 
@@ -409,10 +420,12 @@ type SnapshotLine struct {
 
 // SpeechEntry is the wire shape of the same name.
 type SpeechEntry struct {
-	Text        string  `json:"text"`
-	Index       int     `json:"index"`
-	LogPosition int     `json:"logPosition"`
-	EmittedAt   *string `json:"emittedAt,omitempty"`
+	Text            string      `json:"text"`
+	Index           int         `json:"index"`
+	LogPosition     int         `json:"logPosition"`
+	EmittedAt       *string     `json:"emittedAt,omitempty"`
+	Fate            *SpeechFate `json:"fate,omitempty"`
+	StartedSpeaking *bool       `json:"startedSpeaking,omitempty"`
 }
 
 // SpeechResult is the wire shape of the same name.

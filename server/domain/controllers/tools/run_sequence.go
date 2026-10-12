@@ -219,7 +219,9 @@ func (t *RunSequence) OutputSchema() json.RawMessage {
 										"text": {"type": "string", "description": "What was sent to the display. Often abbreviated differently from what was spoken."},
 										"index": {"type": "integer", "description": "This update's place in the BRAILLE ring, which is not interchangeable with a speech index."},
 										"logPosition": {"type": "integer", "description": "Where this update sits on the reader's log journal."},
-										"emittedAt": {"type": "string", "description": "Always absent here: braille updates carry no emission time."}
+										"emittedAt": {"type": "string", "description": "Always absent here: braille updates carry no emission time."},
+										"fate": {"type": "string", "enum": ["completed", "cancelled", "pending", "unknown"], "description": "Always absent here: braille has no synthesizer. The field exists because speech and braille share one entry shape."},
+										"startedSpeaking": {"type": "boolean", "description": "Always absent here, for the same reason."}
 									},
 									"required": ["text", "index", "logPosition"]
 								}
@@ -242,7 +244,9 @@ func (t *RunSequence) OutputSchema() json.RawMessage {
 					"text": {"type": "string", "description": "What the reader spoke."},
 					"index": {"type": "integer", "description": "This utterance's place in the speech ring."},
 					"logPosition": {"type": "integer", "description": "Where it sits on the reader's log journal; hand it to get_log as since_position."},
-					"emittedAt": {"type": "string", "description": "When the reader emitted it. Absent if the reader supplied none."}
+					"emittedAt": {"type": "string", "description": "When the reader emitted it. Absent if the reader supplied none."},
+					"fate": {"type": "string", "enum": ["completed", "cancelled", "pending", "unknown"], "description": "What became of it after it was queued: completed, cancelled, pending or unknown. The text is captured either way, so only this says whether it was spoken; see get_speech."},
+					"startedSpeaking": {"type": "boolean", "description": "Whether the synthesizer reached its start; with fate cancelled, false means none of it sounded. See get_speech."}
 				},
 				"required": ["text", "index", "logPosition"]
 			}

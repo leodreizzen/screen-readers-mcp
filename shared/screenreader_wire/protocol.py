@@ -157,6 +157,24 @@ class TruncatedBy(StrEnum):
 	MAX_CHARS = "maxChars"
 
 
+class SpeechFate(StrEnum):
+	"""What became of an utterance after the reader queued it.
+
+	Capture happens when speech is QUEUED, so an utterance's text says nothing about whether it was
+	heard: a keystroke cancels whatever is still pending, and that text was captured all the same.
+	``UNKNOWN`` when this session cannot observe the outcome -- a silent session synthesises nothing,
+	so it has nothing to complete or cancel.
+	"""
+
+	#: The synthesizer reached the end of the utterance.
+	COMPLETED = "completed"
+	#: Speech was cancelled before the end was reached; some, all or none of it may have sounded.
+	CANCELLED = "cancelled"
+	#: Queued and not yet resolved: still sounding, still waiting, or never resolved by the reader.
+	PENDING = "pending"
+	UNKNOWN = "unknown"
+
+
 class Command(StrEnum):
 	HELLO = "hello"
 	PING = "ping"
@@ -463,6 +481,10 @@ class SpeechEntry:
 	logPosition: int
 	#: Wall clock when the reader emitted this, not when it was heard, as ``YYYY-MM-DD HH:MM:SS.mmm``.
 	emittedAt: str = ""
+	#: What became of it after it was queued. The text is captured either way.
+	fate: SpeechFate = SpeechFate.UNKNOWN
+	#: Whether the synthesizer reached its start. With ``fate`` ``cancelled``, false means none of it sounded.
+	startedSpeaking: bool = False
 
 
 @dataclass

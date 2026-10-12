@@ -9,6 +9,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
+from ... import protocol
 from .indexed_buffer import IndexedBuffer
 from .speech_text import join_speech
 
@@ -41,6 +42,10 @@ class SpeechBuffer(IndexedBuffer):
 		self._observer: Callable[[str], None] | None = None
 		# None means no continuous read is ever in progress.
 		self._continuous_read: ContinuousRead | None = continuous_read
+		# Parallel to the base's lists, sentinel included. Written only through append and the mark_*
+		# methods, under the lock, because the marks arrive on NVDA's thread.
+		self._fates: list[protocol.SpeechFate] = [protocol.SpeechFate.UNKNOWN]
+		self._started: list[bool] = [False]
 
 	def _sentinel(self) -> Any:
 		return [""]
@@ -52,14 +57,56 @@ class SpeechBuffer(IndexedBuffer):
 		"""The observer is called outside the lock."""
 		self._observer = observer
 
-	def append(self, sequence: Any, log_position: int = 0) -> None:
-		"""Called from NVDA's speech thread."""
+	def append(
+		self,
+		sequence: Any,
+		log_position: int = 0,
+		fate: protocol.SpeechFate = protocol.SpeechFate.UNKNOWN,
+	) -> int:
+		"""Called from NVDA's speech thread. Returns the index the entry landed at.
+
+		``fate`` is ``PENDING`` when the source will report the outcome through the mark_* methods,
+		and ``UNKNOWN`` when it cannot.
+		"""
 		with self._lock:
 			self._record(sequence, log_position)
+			self._fates.append(fate)
+			self._started.append(False)
+			index = len(self._entries) - 1
 			self._speaking = True
 			text = join_speech(sequence)
 		if self._observer is not None and text:
 			self._observer(text)
+		return index
+
+	def fate_at(self, index: int) -> protocol.SpeechFate:
+		"""An out-of-range index answers ``UNKNOWN``."""
+		with self._lock:
+			if 0 <= index < len(self._fates):
+				return self._fates[index]
+			return protocol.SpeechFate.UNKNOWN
+
+	def started_at(self, index: int) -> bool:
+		with self._lock:
+			return 0 <= index < len(self._started) and self._started[index]
+
+	def mark_started(self, index: int) -> None:
+		with self._lock:
+			if 0 <= index < len(self._started):
+				self._started[index] = True
+
+	def mark_completed(self, index: int) -> None:
+		"""Only a pending entry resolves: an outcome, once known, is not rewritten."""
+		self._resolve(index, protocol.SpeechFate.COMPLETED)
+
+	def mark_cancelled(self, index: int) -> None:
+		"""Only a pending entry resolves: an outcome, once known, is not rewritten."""
+		self._resolve(index, protocol.SpeechFate.CANCELLED)
+
+	def _resolve(self, index: int, fate: protocol.SpeechFate) -> None:
+		with self._lock:
+			if 0 <= index < len(self._fates) and self._fates[index] is protocol.SpeechFate.PENDING:
+				self._fates[index] = fate
 
 	def notify_finished(self) -> None:
 		with self._lock:

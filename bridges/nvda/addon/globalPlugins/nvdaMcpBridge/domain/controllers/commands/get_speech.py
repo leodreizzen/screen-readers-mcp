@@ -19,7 +19,7 @@ class GetSpeechHandler(CommandHandler):
 		params = protocol.from_dict(protocol.GetSpeechParams, request.params)
 		entries, from_index, to_index = ctx.speech_buffer.entries_since(params.sinceIndex)
 		return protocol.SpeechResult(
-			entries=speech_entries(entries),
+			entries=speech_entries(entries, ctx.speech_buffer),
 			fromIndex=from_index,
 			toIndex=to_index,
 		)

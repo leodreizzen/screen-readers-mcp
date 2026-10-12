@@ -1028,6 +1028,20 @@
         "emittedAt": {
           "type": "string",
           "default": ""
+        },
+        "fate": {
+          "type": "string",
+          "enum": [
+            "completed",
+            "cancelled",
+            "pending",
+            "unknown"
+          ],
+          "default": "unknown"
+        },
+        "startedSpeaking": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
